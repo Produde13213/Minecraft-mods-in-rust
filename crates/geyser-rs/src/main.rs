@@ -3,6 +3,7 @@ use std::{env, net::SocketAddr};
 use tokio::net::UdpSocket;
 use tracing::{info, warn};
 
+use geyser_rs::connected::{AckPacket, DataDatagram, SequenceRange};
 use geyser_rs::raknet::{
     answer_open_connection_request_1, answer_open_connection_request_2,
     answer_unconnected_ping, ServerAdvertisement, OPEN_CONNECTION_REQUEST_1,
@@ -33,6 +34,27 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     loop {
         let (length, peer) = socket.recv_from(&mut buffer).await?;
         let packet = &buffer[..length];
+        // Connected data datagrams are decoded and acknowledged independently
+        // from the offline connection-negotiation packets.
+        if packet.first().is_some_and(|id| (0x80..=0x8d).contains(id)) {
+            match DataDatagram::decode(packet) {
+                Ok(datagram) => {
+                    let ack = AckPacket {
+                        is_nack: false,
+                        ranges: vec![SequenceRange {
+                            start: datagram.sequence,
+                            end: datagram.sequence,
+                        }],
+                    };
+                    let response = ack.encode()?;
+                    socket.send_to(&response, peer).await?;
+                    info!(%peer, sequence = datagram.sequence.0, frames = datagram.frames.len(), "decoded and acknowledged RakNet datagram");
+                }
+                Err(error) => warn!(%peer, %error, "invalid RakNet data datagram"),
+            }
+            continue;
+        }
+
         let response = match packet.first().copied() {
             Some(0x01) => answer_unconnected_ping(packet, &advertisement),
             Some(OPEN_CONNECTION_REQUEST_1) => {
