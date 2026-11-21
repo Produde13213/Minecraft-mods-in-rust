@@ -3,7 +3,11 @@ use std::{env, net::SocketAddr};
 use tokio::net::UdpSocket;
 use tracing::{info, warn};
 
-use geyser_rs::raknet::{answer_unconnected_ping, ServerAdvertisement};
+use geyser_rs::raknet::{
+    answer_open_connection_request_1, answer_open_connection_request_2,
+    answer_unconnected_ping, ServerAdvertisement, OPEN_CONNECTION_REQUEST_1,
+    OPEN_CONNECTION_REQUEST_2,
+};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -23,18 +27,28 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     let socket = UdpSocket::bind(bind).await?;
-    info!(%bind, "Geyser-RS RakNet discovery listener started");
+    info!(%bind, "Geyser-RS RakNet listener started");
 
     let mut buffer = vec![0u8; 65_535];
     loop {
         let (length, peer) = socket.recv_from(&mut buffer).await?;
-        if let Some(response) = answer_unconnected_ping(&buffer[..length], &advertisement) {
+        let packet = &buffer[..length];
+        let response = match packet.first().copied() {
+            Some(0x01) => answer_unconnected_ping(packet, &advertisement),
+            Some(OPEN_CONNECTION_REQUEST_1) => {
+                answer_open_connection_request_1(packet, advertisement.server_id)
+            }
+            Some(OPEN_CONNECTION_REQUEST_2) => {
+                answer_open_connection_request_2(packet, peer, advertisement.server_id)
+            }
+            _ => None,
+        };
+
+        if let Some(response) = response {
             socket.send_to(&response, peer).await?;
-            info!(%peer, "answered Bedrock server-list ping");
+            info!(%peer, packet_id = packet[0], "answered RakNet handshake packet");
         } else {
-            // Open-connection requests and connected RakNet frames are not
-            // accepted until the reliable transport state machine is ready.
-            warn!(%peer, datagram_bytes = length, "unsupported RakNet datagram");
+            warn!(%peer, datagram_bytes = length, "unsupported or malformed RakNet datagram");
         }
     }
 }
