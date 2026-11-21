@@ -8,6 +8,8 @@ use std::collections::HashMap;
 use std::fmt;
 
 pub mod programs;
+pub mod properties;
+pub use properties::{Properties, PropertyDiagnostic};
 pub use programs::{Program, ProgramGroup};
 
 pub const MAX_INCLUDE_DEPTH: usize = 10;
