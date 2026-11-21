@@ -9,6 +9,8 @@ pub enum DecodeError {
     UnexpectedEof { offset: usize, needed: usize },
     #[error("invalid unsigned VarInt")]
     InvalidVarInt,
+    #[error("invalid packet data: {0}")]
+    InvalidData(&'static str),
     #[error("string length {length} exceeds limit {limit}")]
     StringTooLong { length: usize, limit: usize },
     #[error("string is not valid UTF-8")]
@@ -34,6 +36,20 @@ impl<'a> Reader<'a> {
 
     pub fn remaining(&self) -> usize {
         self.data.len().saturating_sub(self.cursor)
+    }
+
+    pub fn read_exact(&mut self, count: usize) -> Result<&'a [u8], DecodeError> {
+        self.take(count)
+    }
+
+    pub fn read_u16_be(&mut self) -> Result<u16, DecodeError> {
+        let bytes = self.take(2)?;
+        Ok(u16::from_be_bytes([bytes[0], bytes[1]]))
+    }
+
+    pub fn read_u32_be(&mut self) -> Result<u32, DecodeError> {
+        let bytes = self.take(4)?;
+        Ok(u32::from_be_bytes([bytes[0], bytes[1], bytes[2], bytes[3]]))
     }
 
     fn take(&mut self, count: usize) -> Result<&'a [u8], DecodeError> {
