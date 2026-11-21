@@ -5,5 +5,6 @@
 
 pub mod bedrock;
 pub mod raknet;
+pub mod connected;
 
 pub use bedrock::codec::{DecodeError, Reader, Writer};
