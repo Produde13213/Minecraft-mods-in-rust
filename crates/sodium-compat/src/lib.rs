@@ -1,8 +1,8 @@
-pub mod compact;
-pub use compact::{EncodeError, InputVertex, encode_quad};
-
 //! Clean-room chunk mesh data structures for a Rust voxel renderer.
 //! This crate is renderer-agnostic; a game adapter supplies block geometry and GPU upload.
+
+pub mod compact;
+pub use compact::{EncodeError, InputVertex, encode_quad};
 
 use std::collections::BTreeMap;
 
