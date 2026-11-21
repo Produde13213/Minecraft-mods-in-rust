@@ -26,3 +26,9 @@ See [PORT_STATUS.md](PORT_STATUS.md) for the exact audit and remaining compatibi
 ## Build note
 
 Builds must use the pinned Horizon revision and its workspace toolchain. Do not claim a mod builds or runs until Cargo tests and an in-game shader-pack smoke test pass.
+
+## Geyser-RS (standalone proxy)
+
+A separate clean-room Rust port of Geyser's Bedrock-to-Java bridge is being developed at [`crates/geyser-rs`](crates/geyser-rs). It is a standalone proxy, not a Horizon client mod. Floodgate is out of scope.
+
+See [GEYSER_PORT_STATUS.md](GEYSER_PORT_STATUS.md) for implemented components, missing protocol layers and verification status. The current crate is an early foundation and is **not yet a usable Bedrock-to-Java proxy**.
