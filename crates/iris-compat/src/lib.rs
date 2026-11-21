@@ -7,6 +7,9 @@
 use std::collections::HashMap;
 use std::fmt;
 
+pub mod programs;
+pub use programs::{Program, ProgramGroup};
+
 pub const MAX_INCLUDE_DEPTH: usize = 10;
 pub const MAX_SOURCE_BYTES: usize = 8 * 1024 * 1024;
 
